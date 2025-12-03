@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Cronômetro Acessível",
+  "version": "1.0",
+  "description": "Um cronômetro otimizado para acessibilidade e daltonismo.",
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "Abrir Cronômetro"
+  },
+  "permissions": [] 
+}
