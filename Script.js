@@ -5,16 +5,14 @@ window.document.addEventListener("DOMContentLoaded", () => {
         this.tempoDecorrido = 0;
         this.tempoIntervalo = null;
         this.on_off = false;
-        // Callback para atualizar a UI (separação de responsabilidades)
         this.callback = callback; 
     }
 
     start() {
         if (!this.on_off) {
-            // Ajusta o start time subtraindo o que já passou (caso tenha pausado)
+
             this.startTempo = Date.now() - this.tempoDecorrido;
             
-            // Atualiza a cada 10ms para ter precisão de milissegundos
             this.tempoIntervalo = setInterval(() => {
                 this.tempoDecorrido = Date.now() - this.startTempo;
                 this.printTime();
@@ -39,7 +37,6 @@ window.document.addEventListener("DOMContentLoaded", () => {
         this.printTime();
     }
 
-    // Formata o tempo (MM:SS:ms)
     formatTime(timeInMs) {
         let date = new Date(timeInMs);
         let hours = date.getUTCHours().toString().padStart(2, '0');
@@ -47,47 +44,88 @@ window.document.addEventListener("DOMContentLoaded", () => {
         let seconds = date.getUTCSeconds().toString().padStart(2, '0');
         let milliseconds = Math.floor(date.getUTCMilliseconds() / 10).toString().padStart(2, '0');
 
-        return `${hours}:${minutes}:${seconds}:${milliseconds}`;
+        return `${hours}:${minutes}:${seconds}<span class="milissegundos">:${milliseconds}</span>`;
     }
 
     printTime() {
-        // Chama a função que atualiza o HTML
         this.callback(this.formatTime(this.tempoDecorrido));
     }
 }
 
-// --- Integração com o DOM (Interface) ---
 
-// Elementos HTML
 const display = document.getElementById('display');
 const btnStart = document.getElementById('start');
 const btnPause = document.getElementById('pause');
 const btnReset = document.getElementById('reset');
 
-// Instancia a classe passando a função que atualiza o texto na tela
 const meuCronometro = new Cronometro((tempoFormatado) => {
-    display.textContent = tempoFormatado;
+    display.innerHTML = tempoFormatado;
 });
 
-// Event Listeners
 btnStart.addEventListener('click', () => {
     meuCronometro.start();
-    toggleBotoes(true); // Função visual para alternar botões
+
 });
 
 btnPause.addEventListener('click', () => {
     meuCronometro.pause();
-    toggleBotoes(false);
+
+    
+    const tempoEmMs = meuCronometro.tempoDecorrido;
+    
+    const textoParaFalar = gerarFraseDeTempo(tempoEmMs);
+    
+    narrarTempo(textoParaFalar);
+
+    
 });
 
-btnReset.addEventListener('click', () => {
+btnReset.addEventListener('click', () => {    
     meuCronometro.reset();
-    toggleBotoes(false);
+
 });
 
-// Função auxiliar para UX (esconder/mostrar botões)
-function toggleBotoes(rodando) {
-    btnStart.style.display = rodando ? 'none' : 'inline-block';
-    btnPause.style.display = rodando ? 'inline-block' : 'none';
+function gerarFraseDeTempo(ms) {
+
+    const hours = Math.floor(ms / 3600000);
+    const minutes = Math.floor((ms % 3600000) / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    
+    // Captura os milissegundos restantes (0 a 999)
+    const milliseconds = Math.floor(ms % 1000);
+
+    let partes = [];
+
+    if (hours > 0) {
+        partes.push(`${hours} ${hours === 1 ? 'hora' : 'horas'}`);
+    }
+
+    if (minutes > 0) {
+        partes.push(`${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}`);
+    }
+
+    if (seconds > 0) {
+        partes.push(`${seconds} ${seconds === 1 ? 'segundo' : 'segundos'}`);
+    }
+
+    if (milliseconds > 0) {
+        partes.push(`${milliseconds} milissegundos`);
+    }
+
+    if (partes.length === 0) {
+        return "Zero segundos";
+    }
+
+    return partes.join(' e ');
+}
+
+function narrarTempo(texto) {
+    window.speechSynthesis.cancel();
+
+    const mensagem = new SpeechSynthesisUtterance(texto);
+    
+    mensagem.lang = 'pt-BR';
+    
+    window.speechSynthesis.speak(mensagem);
 }
 });
